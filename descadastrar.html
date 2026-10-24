@@ -1,5 +1,0 @@
-<!DOCTYPE html><html lang="pt-BR"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="robots" content="noindex"><title>Descadastrar | Rock &amp; Navalha</title><style>body{margin:0;min-height:100vh;display:grid;place-items:center;background:#000;color:#fff;font-family:Georgia,serif;text-align:center;padding:20px}a{color:#fff}</style></head><body><div><h1>Rock &amp; Navalha</h1><p id="m">Processando…</p><p><a href="./">Voltar ao site</a></p></div>
-<script src="assets/js/vendor/supabase.js"></script><script src="assets/js/config.js"></script>
-<script>var t=new URLSearchParams(location.search).get("t"),m=document.getElementById("m");
-if(!t||!/^[0-9a-f-]{36}$/i.test(t))m.textContent="Link inválido.";
-else supabase.createClient(RN_CONFIG.url,RN_CONFIG.key,{auth:{persistSession:false}}).rpc("unsubscribe",{p_token:t}).then(function(r){m.textContent=r.error?"Não foi possível concluir. Fale com a gente pelo WhatsApp.":"Pronto: seu e-mail foi removido da nossa lista e apagado."})</script></body></html>
