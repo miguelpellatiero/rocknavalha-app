@@ -14,7 +14,7 @@ nav{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:16px}
 <main id="app" hidden><h1>Painel</h1>
 <nav><button data-t="agenda">Agenda</button><button data-t="servicos">Serviços e preços</button><button data-t="pacote">Pacote</button><button data-t="barbeiros">Barbeiros</button><button data-t="horarios">Horários</button><button data-t="inscritos">Inscritos</button><button id="out">Sair</button></nav>
 <section id="v"></section></main><div id="toast" role="status"></div>
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script><script src="assets/js/config.js"></script>
+<script src="assets/js/vendor/supabase.js"></script><script src="assets/js/config.js"></script>
 <script>
 var sb=supabase.createClient(RN_CONFIG.url,RN_CONFIG.key),V=document.getElementById("v");
 function $(i){return document.getElementById(i)}
