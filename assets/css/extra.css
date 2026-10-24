@@ -1,0 +1,12 @@
+.plan{border:1px solid rgba(255,255,255,.35);border-radius:16px;padding:32px;max-width:640px;background:rgba(255,255,255,.04)}
+.plan h2{margin-bottom:8px}.plan .price{font:700 56px Cinzel,serif;line-height:1;margin-bottom:12px}
+.news{display:grid;gap:12px;max-width:520px}
+.chk{display:flex;gap:10px;align-items:flex-start;font-size:14px}.chk input{width:auto;margin-top:4px}
+.hp{position:absolute;left:-9999px;opacity:0}
+.lgpd{font-size:13px;color:#8c8c8c;margin:12px 0}
+.setlist li b{float:right}
+#inst{position:fixed;left:16px;bottom:calc(16px + env(safe-area-inset-bottom,0px));z-index:5;background:#000}
+#inst[hidden]{display:none}
+#music-toggle{position:fixed;right:16px;bottom:calc(76px + env(safe-area-inset-bottom,0px));z-index:5;width:48px;height:48px;border-radius:50%;border:1px solid #fff;background:#000;color:#fff;font-size:20px;cursor:pointer}
+#music-toggle[aria-pressed=true]{background:#fff;color:#000}
+#music-toggle[hidden]{display:none}

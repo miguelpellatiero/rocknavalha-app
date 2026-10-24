@@ -1,0 +1,72 @@
+<!DOCTYPE html><html lang="pt-BR"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="robots" content="noindex,nofollow"><title>Painel | Rock &amp; Navalha</title>
+<style>
+body{margin:0;background:#000;color:#f4f4f4;font:16px/1.5 system-ui,sans-serif;padding:20px}
+h1{font-family:Cinzel,Georgia,serif;margin:0 0 16px}
+input,button{font:inherit;padding:9px 12px;border-radius:8px;border:1px solid #555;background:#111;color:#fff}
+button{cursor:pointer}button.on,#lf button{background:#fff;color:#000;font-weight:700}button.del{border-color:#a33;color:#f99}
+#lf{display:grid;gap:10px;max-width:340px}
+nav{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:16px}
+.sc{overflow-x:auto}table{border-collapse:collapse}td,th{padding:4px;text-align:left}td input:not([type=checkbox]){width:100%;min-width:90px}
+.card{border:1px solid #444;border-radius:10px;padding:12px;margin-bottom:10px}a{color:#fff}
+#toast{position:fixed;left:50%;bottom:20px;transform:translateX(-50%);background:#fff;color:#000;padding:10px 18px;border-radius:99px;opacity:0;transition:opacity .2s}#toast.on{opacity:1}
+</style></head><body>
+<main id="login"><h1>Painel da barbearia</h1><form id="lf"><input id="em" type="email" placeholder="E-mail" required autocomplete="username"><input id="pw" type="password" placeholder="Senha" required autocomplete="current-password"><button>Entrar</button><p id="lm" role="alert"></p></form></main>
+<main id="app" hidden><h1>Painel</h1>
+<nav><button data-t="agenda">Agenda</button><button data-t="servicos">Serviços e preços</button><button data-t="pacote">Pacote</button><button data-t="barbeiros">Barbeiros</button><button data-t="horarios">Horários</button><button data-t="inscritos">Inscritos</button><button id="out">Sair</button></nav>
+<section id="v"></section></main><div id="toast" role="status"></div>
+<script src="assets/js/vendor/supabase.js"></script><script src="assets/js/config.js"></script>
+<script>
+var sb=supabase.createClient(RN_CONFIG.url,RN_CONFIG.key),V=document.getElementById("v");
+function $(i){return document.getElementById(i)}
+function esc(t){return String(t).replace(/[&<>"]/g,function(c){return{"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]})}
+function brl(c){return c==null?"":(c/100).toFixed(2).replace(".",",")}
+function cents(s){s=s.trim();return s===""?null:Math.round(parseFloat(s.replace(",","."))*100)}
+function msg(t){var m=$("toast");m.textContent=t;m.className="on";setTimeout(function(){m.className=""},2500)}
+var TABS={
+ servicos:{table:"services",order:"sort",add:1,cols:[["name","Serviço","text"],["price_cents","Preço (R$)","money"],["sort","Ordem","int"],["active","Ativo","bool"]]},
+ pacote:{table:"plans",order:"name",add:1,cols:[["name","Nome","text"],["price_cents","Preço (R$)","money"],["details","Detalhes","text"],["active","Ativo","bool"]]},
+ barbeiros:{table:"barbers",order:"name",add:1,cols:[["name","Nome","text"],["active","Ativo","bool"]]},
+ horarios:{table:"hours",order:"weekday",pk:"weekday",nodel:1,cols:[["weekday","Dia (0=dom ... 6=sáb)","ro"],["opens","Abre (vazio = fechado)","time"],["closes","Fecha","time"]]}};
+function grid(t){var T=TABS[t],pk=T.pk||"id";sb.from(T.table).select("*").order(T.order).then(function(r){
+ var rows=(r.data||[]).slice();if(T.add)rows.push({});
+ var tb=document.createElement("table");tb.innerHTML="<tr>"+T.cols.map(function(c){return"<th>"+c[1]+"</th>"}).join("")+"<th></th></tr>";
+ rows.forEach(function(row){var tr=document.createElement("tr"),ins=[],isNew=row[pk]===undefined;
+  T.cols.forEach(function(c){var td=document.createElement("td"),i=document.createElement("input"),ty=c[2],v=row[c[0]];
+   if(ty==="bool"){i.type="checkbox";i.checked=isNew?true:!!v}
+   else if(ty==="time"){i.type="time";i.value=v?v.slice(0,5):""}
+   else{i.value=ty==="money"?brl(v):(v==null?"":v);if(ty==="ro")i.readOnly=true}
+   td.appendChild(i);tr.appendChild(td);ins.push([c,i])});
+  var td=document.createElement("td"),sv=document.createElement("button");sv.textContent=isNew?"Adicionar":"Salvar";
+  sv.onclick=function(){var o={};ins.forEach(function(p){var ty=p[0][2],i=p[1];if(ty==="ro")return;
+    o[p[0][0]]=ty==="bool"?i.checked:ty==="money"?cents(i.value):ty==="time"?(i.value||null):ty==="int"?(parseInt(i.value,10)||0):i.value.trim()});
+   var q=isNew?sb.from(T.table).insert(o):sb.from(T.table).update(o).eq(pk,row[pk]);
+   q.then(function(x){if(x.error)msg("Erro: "+x.error.message);else{msg("Salvo");grid(t)}})};
+  td.appendChild(sv);
+  if(!isNew&&!T.nodel){var d=document.createElement("button");d.textContent="Excluir";d.className="del";
+   d.onclick=function(){if(confirm("Excluir este item?"))sb.from(T.table).delete().eq(pk,row[pk]).then(function(x){x.error?msg("Erro: "+x.error.message):grid(t)})};td.appendChild(d)}
+  tr.appendChild(td);tb.appendChild(tr)});
+ V.innerHTML="";var w=document.createElement("div");w.className="sc";w.appendChild(tb);V.appendChild(w)})}
+function agenda(){sb.from("appointments").select("id,service_name,starts_at,name,phone,barbers(name)").gte("starts_at",new Date(Date.now()-864e5).toISOString()).order("starts_at").then(function(r){
+ var rows=r.data||[];V.innerHTML=rows.length?"":"<p>Nenhum agendamento.</p>";
+ rows.forEach(function(a){var d=document.createElement("div"),p=a.phone.replace(/\D/g,"");if(p.length<=11)p="55"+p;d.className="card";
+  var dt=new Date(a.starts_at).toLocaleString("pt-BR",{timeZone:"America/Sao_Paulo",weekday:"short",day:"2-digit",month:"2-digit",hour:"2-digit",minute:"2-digit"});
+  d.innerHTML="<b>"+dt+"</b> · "+esc(a.service_name)+" · "+esc(a.barbers?a.barbers.name:"—")+"<br>"+esc(a.name)+" · <a href='https://wa.me/"+p+"' target='_blank' rel='noopener'>"+esc(a.phone)+"</a> ";
+  var b=document.createElement("button");b.className="del";b.textContent="Cancelar";
+  b.onclick=function(){if(confirm("Cancelar e apagar este agendamento?"))sb.from("appointments").delete().eq("id",a.id).then(agenda)};
+  d.appendChild(b);V.appendChild(d)})})}
+function subs(){sb.from("subscribers").select("id,email,consent_at,token").order("consent_at",{ascending:false}).then(function(r){
+ var rows=r.data||[];V.innerHTML="<p>"+rows.length+" inscrito(s) <button id='csv'>Exportar CSV</button></p>";
+ rows.forEach(function(s){var d=document.createElement("div");d.className="card";d.innerHTML=esc(s.email)+" · "+new Date(s.consent_at).toLocaleDateString("pt-BR")+" ";
+  var b=document.createElement("button");b.className="del";b.textContent="Excluir";b.onclick=function(){if(confirm("Excluir este e-mail?"))sb.from("subscribers").delete().eq("id",s.id).then(subs)};d.appendChild(b);V.appendChild(d)});
+ $("csv").onclick=function(){var base=location.origin+location.pathname.replace(/[^\/]*$/,"");
+  var c="email,consentimento,link_descadastrar\n"+rows.map(function(s){return s.email+","+s.consent_at+","+base+"descadastrar.html?t="+s.token}).join("\n");
+  var a=document.createElement("a");a.href=URL.createObjectURL(new Blob([c],{type:"text/csv"}));a.download="inscritos.csv";a.click()}})}
+function show(t){document.querySelectorAll("nav button[data-t]").forEach(function(b){b.className=b.dataset.t===t?"on":""});V.textContent="Carregando…";t==="agenda"?agenda():t==="inscritos"?subs():grid(t)}
+document.querySelectorAll("nav button[data-t]").forEach(function(b){b.onclick=function(){show(b.dataset.t)}});
+function init(){sb.auth.getSession().then(function(s){if(!s.data.session)return;sb.from("admins").select("user_id").maybeSingle().then(function(r){
+ if(!r.data){sb.auth.signOut();$("lm").textContent="Esta conta não tem permissão de administrador.";return}
+ $("login").hidden=true;$("app").hidden=false;show("agenda")})})}
+$("lf").onsubmit=function(e){e.preventDefault();sb.auth.signInWithPassword({email:$("em").value,password:$("pw").value}).then(function(r){if(r.error){$("lm").textContent="E-mail ou senha incorretos.";return}init()})};
+$("out").onclick=function(){sb.auth.signOut().then(function(){location.reload()})};
+init();
+</script></body></html>
